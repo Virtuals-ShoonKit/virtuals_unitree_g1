@@ -1,0 +1,9 @@
+[submodule "external/unitree_sdk2"]
+	path = external/unitree_sdk2
+	url = https://github.com/unitreerobotics/unitree_sdk2
+[submodule "external/GR00T-WholeBodyControl"]
+	path = external/GR00T-WholeBodyControl
+	url = https://github.com/Virtuals-ShoonKit/GR00T-WholeBodyControl.git
+[submodule "external/dfx_inspire_service"]
+	path = external/dfx_inspire_service
+	url = https://github.com/Virtuals-ShoonKit/dfx_inspire_service
