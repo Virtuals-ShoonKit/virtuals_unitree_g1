@@ -76,18 +76,18 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-# Create Inspire hand service
+# Create Inspire hand service (TCP version for RH56DFTP hands)
 echo "Creating Inspire hand service..."
-sudo tee /etc/systemd/system/g1-inspire.service > /dev/null << EOF
+sudo tee /etc/systemd/system/g1-inspire.service > /dev/null << 'EOF'
 [Unit]
-Description=G1 Inspire Hand Controller
+Description=G1 Inspire Hand Controller (TCP Modbus)
 After=network.target
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=$SCRIPT_DIR/external/dfx_inspire_service/build
-ExecStart=$SCRIPT_DIR/external/dfx_inspire_service/build/inspire_g1
+WorkingDirectory=/home/unitree/virtuals_unitree_g1/external/dfx_inspire_service/build
+ExecStart=/home/unitree/virtuals_unitree_g1/external/dfx_inspire_service/build/inspire_g1_tcp
 Restart=always
 RestartSec=5
 
