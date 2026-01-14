@@ -81,12 +81,14 @@ echo "Creating Inspire hand service..."
 sudo tee /etc/systemd/system/g1-inspire.service > /dev/null << 'EOF'
 [Unit]
 Description=G1 Inspire Hand Controller (TCP Modbus)
-After=network.target
+After=network.target unitree_dds.service
+Wants=unitree_dds.service
 
 [Service]
 Type=simple
 User=root
 WorkingDirectory=/home/unitree/virtuals_unitree_g1/external/dfx_inspire_service/build
+ExecStartPre=/bin/sleep 10
 ExecStart=/home/unitree/virtuals_unitree_g1/external/dfx_inspire_service/build/inspire_g1_tcp
 Restart=always
 RestartSec=5
