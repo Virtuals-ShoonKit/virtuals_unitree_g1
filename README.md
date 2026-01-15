@@ -49,6 +49,11 @@ python3 ~/virtuals_unitree_g1/external/GR00T-WholeBodyControl/tests/test_rs_cam.
 python3 ~/virtuals_unitree_g1/external/dfx_inspire_service/test_inspire_tcp.py
 ```
 
+## Add expired ros key
+```
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F42ED6FBAB17C654
+```
+
 ## Network Sharing (from Host PC)
 
 To give G1 internet access from your PC (192.168.123.222):
