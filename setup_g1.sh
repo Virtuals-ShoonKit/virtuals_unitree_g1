@@ -68,7 +68,7 @@ Type=simple
 User=unitree
 WorkingDirectory=$SCRIPT_DIR/external/GR00T-WholeBodyControl
 Environment="PYTHONPATH=$SCRIPT_DIR/external/GR00T-WholeBodyControl"
-ExecStart=/usr/bin/python3 -m gr00t_wbc.control.sensor.composed_camera --head_camera realsense --server --port 5555 --fps 30
+ExecStart=/usr/bin/python3 -m gr00t_wbc.control.sensor.composed_camera --ego_view_camera None --head_camera realsense --server --port 5555 --fps 30
 Restart=always
 RestartSec=5
 
