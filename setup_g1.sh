@@ -65,11 +65,33 @@ install_zed_sdk() {
     
     # Default if detection failed
     if [ -z "$L4T_VERSION" ]; then
-        echo "Warning: Could not detect L4T version. Assuming JetPack 6.x (L4T 36.x)"
-        L4T_VERSION="36"
-        L4T_FULL="36.4"
+        echo "Warning: Could not detect L4T version. Assuming JetPack 5.x (L4T 35.x)"
+        L4T_VERSION="35"
+        L4T_FULL="35.4"
     fi
 
+    # Check for local ZED SDK installer in repo first
+    LOCAL_ZED_SDK="$SCRIPT_DIR/ZED_SDK_Tegra_L4T35.4_v5.1.2.zstd.run"
+    
+    if [ -f "$LOCAL_ZED_SDK" ]; then
+        echo "Found local ZED SDK installer: $LOCAL_ZED_SDK"
+        
+        # Verify L4T compatibility (local SDK is for L4T 35.4)
+        if [ "$L4T_VERSION" -ne 35 ] 2>/dev/null; then
+            echo "Warning: Local ZED SDK is for L4T 35.4, but detected L4T $L4T_FULL"
+            echo "Proceeding with local installer anyway..."
+        fi
+        
+        echo "Installing ZED SDK from local file..."
+        chmod +x "$LOCAL_ZED_SDK"
+        sudo "$LOCAL_ZED_SDK" -- silent skip_od_module
+        echo "ZED SDK installed successfully from local file"
+        return 0
+    fi
+
+    # Fallback: download if local file not found
+    echo "Local ZED SDK not found, downloading..."
+    
     # Determine ZED SDK version based on L4T version
     ZED_SDK_VERSION="4.2"
     
@@ -112,7 +134,7 @@ install_zed_sdk() {
     sudo "$ZED_DOWNLOAD_PATH" -- silent skip_od_module
 
     # Clean up
-    rm -f "$ZED_INSTALLER"
+    rm -f "$ZED_DOWNLOAD_PATH"
     
     echo "ZED SDK installed successfully"
 }
@@ -123,7 +145,12 @@ install_zed_sdk
 echo "[5/8] Installing ZED Python API..."
 if [ -f "/usr/local/zed/get_python_api.py" ]; then
     cd /usr/local/zed
-    python3 get_python_api.py
+    sudo python3 get_python_api.py
+    # Fix permissions - ZED installer creates packages with restrictive permissions
+    # that break pip3 for non-root users
+    if [ -d "/usr/local/lib/python3.8/dist-packages" ]; then
+        sudo chmod -R a+rX /usr/local/lib/python3.8/dist-packages/
+    fi
     echo "ZED Python API installed"
 else
     echo "Warning: ZED SDK not found at /usr/local/zed. Skipping Python API installation."
