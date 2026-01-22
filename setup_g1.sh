@@ -42,11 +42,29 @@ install_zed_sdk() {
 
     # Detect L4T version for Jetson
     if [ -f /etc/nv_tegra_release ]; then
-        L4T_VERSION=$(head -n 1 /etc/nv_tegra_release | sed 's/.*R\([0-9]*\).*/\1/')
-        L4T_REVISION=$(head -n 1 /etc/nv_tegra_release | sed 's/.*REVISION: \([0-9.]*\).*/\1/')
+        # Format: "# R36 (release), REVISION: 3.1, ..."
+        L4T_RELEASE_LINE=$(head -n 1 /etc/nv_tegra_release)
+        echo "L4T release info: $L4T_RELEASE_LINE"
+        
+        # Extract major version (e.g., 36 from R36)
+        L4T_VERSION=$(echo "$L4T_RELEASE_LINE" | grep -oP 'R\K[0-9]+' | head -1)
+        # Extract revision (e.g., 3.1 from REVISION: 3.1)
+        L4T_REVISION=$(echo "$L4T_RELEASE_LINE" | grep -oP 'REVISION:\s*\K[0-9.]+' | head -1)
+        
+        # Fallback if grep -P not available
+        if [ -z "$L4T_VERSION" ]; then
+            L4T_VERSION=$(echo "$L4T_RELEASE_LINE" | sed -n 's/.*R\([0-9]\+\).*/\1/p')
+        fi
+        if [ -z "$L4T_REVISION" ]; then
+            L4T_REVISION=$(echo "$L4T_RELEASE_LINE" | sed -n 's/.*REVISION: *\([0-9.]\+\).*/\1/p')
+        fi
+        
         L4T_FULL="${L4T_VERSION}.${L4T_REVISION}"
-        echo "Detected L4T version: $L4T_FULL"
-    else
+        echo "Detected L4T version: $L4T_FULL (major: $L4T_VERSION)"
+    fi
+    
+    # Default if detection failed
+    if [ -z "$L4T_VERSION" ]; then
         echo "Warning: Could not detect L4T version. Assuming JetPack 6.x (L4T 36.x)"
         L4T_VERSION="36"
         L4T_FULL="36.4"
@@ -55,14 +73,22 @@ install_zed_sdk() {
     # Determine ZED SDK version based on L4T version
     ZED_SDK_VERSION="4.2"
     
-    if [ "$L4T_VERSION" -ge "36" ]; then
+    if [ "$L4T_VERSION" -ge 36 ] 2>/dev/null; then
         # JetPack 6.x (L4T 36.x) - Orin with CUDA 12.x
-        ZED_INSTALLER="ZED_SDK_Tegra_L4T36.4_v${ZED_SDK_VERSION}.zstd.run"
+        ZED_INSTALLER="ZED_SDK_Tegra_L4T36.zstd.run"
         ZED_URL="https://download.stereolabs.com/zedsdk/${ZED_SDK_VERSION}/l4t36.4/jetsons"
-    elif [ "$L4T_VERSION" -ge "35" ]; then
-        # JetPack 5.x (L4T 35.x) - Orin with CUDA 11.x
-        ZED_INSTALLER="ZED_SDK_Tegra_L4T35.4_v${ZED_SDK_VERSION}.zstd.run"
-        ZED_URL="https://download.stereolabs.com/zedsdk/${ZED_SDK_VERSION}/l4t35.4/jetsons"
+    elif [ "$L4T_VERSION" -eq 35 ] 2>/dev/null; then
+        # JetPack 5.x (L4T 35.x) - Match exact minor version
+        L4T_MINOR=$(echo "$L4T_REVISION" | cut -d. -f1)
+        if [ "$L4T_MINOR" -ge 4 ] 2>/dev/null; then
+            ZED_L4T="l4t35.4"
+        elif [ "$L4T_MINOR" -eq 3 ]; then
+            ZED_L4T="l4t35.3"
+        else
+            ZED_L4T="l4t35.2"
+        fi
+        ZED_INSTALLER="ZED_SDK_Tegra_${ZED_L4T}.zstd.run"
+        ZED_URL="https://download.stereolabs.com/zedsdk/${ZED_SDK_VERSION}/${ZED_L4T}/jetsons"
     else
         echo "Error: Unsupported L4T version $L4T_VERSION. ZED SDK requires L4T 35.x+ for Orin."
         return 1
@@ -70,16 +96,20 @@ install_zed_sdk() {
 
     # Download ZED SDK
     echo "Downloading ZED SDK from $ZED_URL..."
-    cd /tmp
-    wget -q --show-progress "$ZED_URL" -O "$ZED_INSTALLER" || {
-        echo "Failed to download ZED SDK. Please download manually from https://www.stereolabs.com/developers/release"
+    ZED_DOWNLOAD_PATH="/tmp/$ZED_INSTALLER"
+    rm -f "$ZED_DOWNLOAD_PATH"
+    
+    if ! wget --progress=bar:force "$ZED_URL" -O "$ZED_DOWNLOAD_PATH"; then
+        echo "Failed to download ZED SDK."
+        echo "Please download manually from: https://www.stereolabs.com/developers/release"
+        echo "Then run: chmod +x <downloaded_file> && sudo ./<downloaded_file>"
         return 1
-    }
+    fi
 
-    # Install ZED SDK silently
+    # Install ZED SDK silently (keep tools for diagnostics)
     echo "Installing ZED SDK..."
-    chmod +x "$ZED_INSTALLER"
-    ./"$ZED_INSTALLER" -- silent skip_od_module skip_tools
+    chmod +x "$ZED_DOWNLOAD_PATH"
+    sudo "$ZED_DOWNLOAD_PATH" -- silent skip_od_module
 
     # Clean up
     rm -f "$ZED_INSTALLER"
