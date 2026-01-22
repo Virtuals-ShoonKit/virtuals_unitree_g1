@@ -10,15 +10,44 @@ echo ""
 PASS=0
 FAIL=0
 
-# Test 1: RealSense Camera
-echo "[1/3] Testing RealSense Camera..."
+# Test 1: ZED Camera
+echo "[1/4] Testing ZED Camera..."
 echo "----------------------------------------------"
 
 # Temporarily stop the service to free the camera
-sudo systemctl stop g1-realsense 2>/dev/null || true
+sudo systemctl stop g1-camera 2>/dev/null || true
 sleep 1
 
-if python3 "$SCRIPT_DIR/external/GR00T-WholeBodyControl/tests/test_rs_cam.py"; then
+if python3 -c "
+import pyzed.sl as sl
+zed = sl.Camera()
+params = sl.InitParameters()
+params.camera_resolution = sl.RESOLUTION.HD720
+params.depth_mode = sl.DEPTH_MODE.NONE
+status = zed.open(params)
+if status != sl.ERROR_CODE.SUCCESS:
+    exit(1)
+image = sl.Mat()
+for _ in range(5):
+    if zed.grab() == sl.ERROR_CODE.SUCCESS:
+        zed.retrieve_image(image, sl.VIEW.LEFT)
+zed.close()
+print('ZED camera OK')
+" 2>/dev/null; then
+    echo "✓ ZED camera test PASSED"
+    ((PASS++))
+else
+    echo "✗ ZED camera test FAILED"
+    ((FAIL++))
+fi
+
+echo ""
+
+# Test 2: RealSense Camera
+echo "[2/4] Testing RealSense Camera..."
+echo "----------------------------------------------"
+
+if python3 "$SCRIPT_DIR/external/GR00T-WholeBodyControl/tests/test_rs_cam.py" 2>/dev/null; then
     echo "✓ RealSense camera test PASSED"
     ((PASS++))
 else
@@ -26,16 +55,16 @@ else
     ((FAIL++))
 fi
 
-# Restart the service
-sudo systemctl start g1-realsense 2>/dev/null || true
+# Restart the camera service
+sudo systemctl start g1-camera 2>/dev/null || true
 
 echo ""
 
-# Test 2: Inspire Hands (TCP)
-echo "[2/3] Testing Inspire Hands (TCP Modbus)..."
+# Test 3: Inspire Hands (TCP)
+echo "[3/4] Testing Inspire Hands (TCP Modbus)..."
 echo "----------------------------------------------"
 
-if python3 "$SCRIPT_DIR/external/dfx_inspire_service/test_inspire_tcp.py"; then
+if python3 "$SCRIPT_DIR/external/dfx_inspire_service/test_inspire_tcp.py" 2>/dev/null; then
     echo "✓ Inspire hands test PASSED"
     ((PASS++))
 else
@@ -45,18 +74,18 @@ fi
 
 echo ""
 
-# Test 3: Service Status
-echo "[3/3] Checking Service Status..."
+# Test 4: Service Status
+echo "[4/4] Checking Service Status..."
 echo "----------------------------------------------"
 
-echo -n "  g1-realsense: "
-if systemctl is-active --quiet g1-realsense; then
+echo -n "  g1-camera:  "
+if systemctl is-active --quiet g1-camera; then
     echo "✓ running"
 else
     echo "✗ not running"
 fi
 
-echo -n "  g1-inspire:   "
+echo -n "  g1-inspire: "
 if systemctl is-active --quiet g1-inspire; then
     echo "✓ running"
 else
@@ -76,4 +105,3 @@ else
     echo "Some tests failed. Check the output above."
     exit 1
 fi
-
