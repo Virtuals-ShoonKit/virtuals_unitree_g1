@@ -18,7 +18,6 @@ cd virtuals_unitree_g1
 | Component | Description |
 |-----------|-------------|
 | `unitree_sdk2` | Unitree SDK for robot communication |
-| `GR00T-WholeBodyControl` | Whole-body control policies & teleoperation |
 | `dfx_inspire_service` | Inspire RH56DFX dexterous hand controller |
 
 ## Services (Auto-start at Boot)
@@ -27,31 +26,20 @@ After setup, these services run automatically:
 
 ```bash
 # Check status
-sudo systemctl status g1-realsense
 sudo systemctl status g1-inspire
 
 # View logs
-journalctl -u g1-realsense -f
 journalctl -u g1-inspire -f
 
 # Restart if needed
-sudo systemctl restart g1-realsense
 sudo systemctl restart g1-inspire
 ```
 
 ## Manual Testing
 
 ```bash
-# Test RealSense camera
-python3 ~/virtuals_unitree_g1/external/GR00T-WholeBodyControl/tests/test_rs_cam.py
-
 # Test Inspire hands
 python3 ~/virtuals_unitree_g1/external/dfx_inspire_service/test_inspire_tcp.py
-```
-
-## Add expired ros key
-```
-sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F42ED6FBAB17C654
 ```
 
 ## Network Sharing (from Host PC)
@@ -76,5 +64,4 @@ echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
 ## Submodules
 
 - [unitree_sdk2](https://github.com/unitreerobotics/unitree_sdk2)
-- [GR00T-WholeBodyControl](https://github.com/Virtuals-ShoonKit/GR00T-WholeBodyControl)
 - [dfx_inspire_service](https://github.com/Virtuals-ShoonKit/dfx_inspire_service)
